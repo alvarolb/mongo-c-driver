@@ -741,7 +741,7 @@ if(MONGOC_ENABLE_DYNAMIC)
    target_link_libraries (mongoc-stat mongoc_static ${LIBRARIES})
  else ()
    message (FATAL_ERROR
-      "Either MONGOC_ENABLE_DYNAMIC or MONGOC_ENABLE_STATIC must be enabled"
+      "Either ENABLE_DYNAMIC or ENABLE_STATIC must be enabled")
  endif()
  
 # mongoc-stat works if shared memory performance counters are enabled.
