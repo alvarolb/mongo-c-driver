@@ -720,7 +720,7 @@ endif ()
 if (ENABLE_APPLE_FRAMEWORK)
    if(not MONGOC_ENABLE_DYNAMIC)
       message (FATAL_ERROR
-      "MONGOC_ENABLE_DYNAMIC option must be enabled when ENABLE_APPLE_FRAMEWORK is ON"
+      "MONGOC_ENABLE_DYNAMIC option must be enabled when ENABLE_APPLE_FRAMEWORK is ON")
    endif ()
    
    set_target_properties (mongoc_shared PROPERTIES
