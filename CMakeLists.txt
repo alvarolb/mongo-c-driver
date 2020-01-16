@@ -27,6 +27,7 @@ set (ENABLE_SASL AUTO CACHE STRING
 set_property(CACHE ENABLE_SASL PROPERTY STRINGS "CYRUS|SSPI|AUTO|OFF")
 
 set (ENABLE_STATIC AUTO CACHE STRING "Build static libmongoc. Set to ON/AUTO/OFF, default AUTO.")
+set (ENABLE_DYNAMIC AUTO CACHE STRING "Build dynamic libmongoc. Set to ON/AUTO/OFF, default AUTO.")
 option (ENABLE_TESTS "Build MongoDB C Driver tests." ON)
 option (ENABLE_EXAMPLES "Build MongoDB C Driver examples." ON)
 set (ENABLE_SRV AUTO CACHE STRING "Support mongodb+srv URIs. Set to ON/AUTO/OFF, default AUTO.")
@@ -166,6 +167,10 @@ if (ENABLE_BSON STREQUAL SYSTEM)
 
    if (ENABLE_STATIC MATCHES "ON|AUTO")
       set (MONGOC_ENABLE_STATIC ON)
+   endif ()
+   
+   if (ENABLE_DYNAMIC MATCHES "ON|AUTO")
+      set (MONGOC_ENABLE_DYNAMIC ON)
    endif ()
 
    set (USING_SYSTEM_BSON TRUE)
