@@ -692,15 +692,17 @@ if (WIN32)
    set (LIBRARIES ${LIBRARIES} ws2_32)
 endif ()
 
-add_library (mongoc_shared SHARED ${SOURCES} ${HEADERS} ${HEADERS_FORWARDING})
-set_target_properties (mongoc_shared PROPERTIES CMAKE_CXX_VISIBILITY_PRESET hidden)
-target_link_libraries (mongoc_shared PRIVATE ${LIBRARIES} PUBLIC ${BSON_LIBRARIES})
-target_include_directories (mongoc_shared BEFORE PUBLIC ${MONGOC_INTERNAL_INCLUDE_DIRS})
-target_include_directories (mongoc_shared PRIVATE ${PRIVATE_ZLIB_INCLUDES})
-target_compile_definitions (mongoc_shared PRIVATE MONGOC_COMPILATION)
+if (MONGOC_ENABLE_DYNAMIC)
+   add_library (mongoc_shared SHARED ${SOURCES} ${HEADERS} ${HEADERS_FORWARDING})
+   set_target_properties (mongoc_shared PROPERTIES CMAKE_CXX_VISIBILITY_PRESET hidden)
+   target_link_libraries (mongoc_shared PRIVATE ${LIBRARIES} PUBLIC ${BSON_LIBRARIES})
+   target_include_directories (mongoc_shared BEFORE PUBLIC ${MONGOC_INTERNAL_INCLUDE_DIRS})
+   target_include_directories (mongoc_shared PRIVATE ${PRIVATE_ZLIB_INCLUDES})
+   target_compile_definitions (mongoc_shared PRIVATE MONGOC_COMPILATION)
 
-set_target_properties (mongoc_shared PROPERTIES VERSION 0.0.0 SOVERSION 0)
-set_target_properties (mongoc_shared PROPERTIES OUTPUT_NAME "${MONGOC_OUTPUT_BASENAME}-${MONGOC_API_VERSION}" PREFIX "lib")
+   set_target_properties (mongoc_shared PROPERTIES VERSION 0.0.0 SOVERSION 0)
+   set_target_properties (mongoc_shared PROPERTIES OUTPUT_NAME "${MONGOC_OUTPUT_BASENAME}-${MONGOC_API_VERSION}" PREFIX "lib")
+endif ()
 
 if (MONGOC_ENABLE_STATIC)
    add_library (mongoc_static STATIC ${SOURCES} ${HEADERS} ${HEADERS_FORWARDING})
@@ -716,6 +718,11 @@ if (MONGOC_ENABLE_STATIC)
 endif ()
 
 if (ENABLE_APPLE_FRAMEWORK)
+   if(not MONGOC_ENABLE_DYNAMIC)
+      message (FATAL_ERROR
+      "MONGOC_ENABLE_DYNAMIC option must be enabled when ENABLE_APPLE_FRAMEWORK is ON"
+   endif ()
+   
    set_target_properties (mongoc_shared PROPERTIES
       FRAMEWORK TRUE
       MACOSX_FRAMEWORK_BUNDLE_VERSION ${MONGOC_VERSION}
@@ -726,9 +733,17 @@ if (ENABLE_APPLE_FRAMEWORK)
    )
 endif ()
 
-add_executable (mongoc-stat ${PROJECT_SOURCE_DIR}/../../src/tools/mongoc-stat.c)
-target_link_libraries (mongoc-stat mongoc_shared ${LIBRARIES})
-
+if(MONGOC_ENABLE_DYNAMIC)
+   add_executable (mongoc-stat ${PROJECT_SOURCE_DIR}/../../src/tools/mongoc-stat.c)
+   target_link_libraries (mongoc-stat mongoc_shared ${LIBRARIES})
+ elseif (MONGOC_ENABLE_STATIC)
+   add_executable (mongoc-stat ${PROJECT_SOURCE_DIR}/../../src/tools/mongoc-stat.c)
+   target_link_libraries (mongoc-stat mongoc_static ${LIBRARIES})
+ else ()
+   message (FATAL_ERROR
+      "Either MONGOC_ENABLE_DYNAMIC or MONGOC_ENABLE_STATIC must be enabled"
+ endif()
+ 
 # mongoc-stat works if shared memory performance counters are enabled.
 if (ENABLE_SHM_COUNTERS STREQUAL "ON")
    install (PROGRAMS ${PROJECT_BINARY_DIR}/mongoc-stat
@@ -972,10 +987,13 @@ file (COPY ${PROJECT_SOURCE_DIR}/tests/json DESTINATION ${PROJECT_BINARY_DIR}/te
 file (COPY ${PROJECT_SOURCE_DIR}/tests/x509gen DESTINATION ${PROJECT_BINARY_DIR}/tests)
 file (COPY ${PROJECT_SOURCE_DIR}/tests/release_files DESTINATION ${PROJECT_BINARY_DIR}/tests)
 
+
 if (MONGOC_ENABLE_STATIC)
-   set (TARGETS_TO_INSTALL mongoc_shared mongoc_static)
-else ()
-   set (TARGETS_TO_INSTALL mongoc_shared)
+   set (TARGETS_TO_INSTALL mongoc_static)
+endif ()
+
+if(MONGOC_ENABLE_DYNAMIC)
+   set (TARGETS_TO_INSTALL "${TARGETS_TO_INSTALL} mongoc_shared")
 endif ()
 
 set (MONGOC_HEADER_INSTALL_DIR
